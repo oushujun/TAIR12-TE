@@ -3,4 +3,5 @@ data/genome/*
 data/gff/*
 !data/gff/README.md
 data/out_merge
+*.DS_Store
 
