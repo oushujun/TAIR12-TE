@@ -1,0 +1,6 @@
+data/genome/*
+!data/genome/README.md
+data/gff/*
+!data/gff/README.md
+data/out_merge
+
