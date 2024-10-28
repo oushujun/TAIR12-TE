@@ -1,10 +1,10 @@
 # This script gets gff file and the genome and return the set of candidate sequences for merging
 
-source(system.file("utils/utils.R", package = "pannagram"))
-
-pokazStage('Combine results..')
-
-library(optparse)
+suppressMessages({
+  library(crayon)
+  library(pannagram)
+  library(optparse)
+})
 
 option_list = list(
   make_option("--path.out",      type="character", default="", help="Path to the output folder"),
@@ -37,9 +37,8 @@ file.fix = opt$file.fix
 file.fix.seqs = opt$file.fix.seqs
 
 # ---- Read the merged sequences
-# file.fix = '/Users/annaigolkina/Library/CloudStorage/OneDrive-Personal/vienn/pacbio/tebagra/tair12_data/simsearch_90/merged_seqs_fixed.txt'
 
-pokaz("File name:", file.fix)
+# pokaz("File name:", file.fix)
 x = read.table(file.fix, stringsAsFactors = F)
 # print(paste0('Number of rows in x', nrow(x)))
 
@@ -72,7 +71,7 @@ if(!is.null(to.remove)){
 }
 
 if(nrow(x) == 0){
-  print('No sequences as merged')
+  pokaz('No sequences as merged')
   return()
 }
 
@@ -84,12 +83,12 @@ seqs.all = c()
 
 for(f in file.seqs){
   seqs.all = c(seqs.all,
-               readFastaMy(f))
+               readFasta(f))
 }
 
 seqs.all = seqs.all[x$V2]
 
-writeFastaMy(seqs.all, file.fix.seqs)
+writeFasta(seqs.all, file.fix.seqs)
 
 
 

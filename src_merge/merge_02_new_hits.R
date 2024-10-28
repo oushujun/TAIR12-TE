@@ -1,22 +1,17 @@
 # This script gets gff file and the genome and return the set of candidate sequences for merging
 
-source(system.file("utils/utils.R", package = "pannagram"))
-
-pokazStage('Analyse counts..')
-
-library(optparse)
+suppressMessages({
+  library(crayon)
+  library(pannagram)
+  library(optparse)
+})
 
 option_list = list(
-  make_option(c("--file.cnt"), type="character", default="", 
-              help="Path to the GFF file", metavar="character"),
-  make_option(c("--file.genome"), type="character", default="", 
-              help="Path to the genome file", metavar="character"),
-  make_option(c("--file.seqs"), type="character", default="", 
-              help="Path to the sequences file", metavar="character"),
-  make_option(c("--file.fix"), type="character", default="", 
-              help="Path to the sequences file", metavar="character"),
-  make_option(c("--copy.number"), type="integer", default=3, 
-              help="Allowed minimal copu-number of genes", metavar="integer")
+  make_option(c("--file.cnt"),     type="character", default="", help="Path to the GFF file"),
+  make_option(c("--file.genome"),  type="character", default="", help="Path to the genome file"),
+  make_option(c("--file.seqs"),    type="character", default="", help="Path to the sequences file"),
+  make_option(c("--file.fix"),     type="character", default="", help="Path to the sequences file"),
+  make_option(c("--copy.number"),  type="integer",   default=3,  help="Allowed minimal copy-number of genes")
 );
 
 opt_parser = OptionParser(option_list=option_list);
@@ -49,14 +44,12 @@ copy.number = opt$copy.number
 # ---- Read the genome ----
 
 if(!file.exists(file.genome)) stop('Genome file doesn’t exist')
-genome = readFastaMy(file.genome)
+genome = readFasta(file.genome)
 
 genome.list = list()
 for(i.chr in 1:length(genome)){
   genome.list[[i.chr]] = seq2nt(genome[i.chr])
 }
-
-pokaz('Chromosome lengths:', unname(nchar(genome)))
 
 # ---- Sequence counts ----
 
@@ -86,7 +79,6 @@ write.table(res, file.fix, append = T, quote = F, sep = '\t', col.names = F, row
 # ---- Merge further ----
 
 if(length(idx.merged) == 0){
-  pokaz('No further merging')
   quit(save = "no")
 }
   
@@ -113,7 +105,7 @@ for(irow in 1:(nrow(res) - 1)){
 
 if(length(seqs.merge) > 0){
   pokaz('Total number of sequences:', length(seqs.merge))
-  writeFastaMy(seqs.merge, file.seqs)  
+  writeFasta(seqs.merge, file.seqs)  
 } else {
   pokaz('No sequences were found for merging')  
 }

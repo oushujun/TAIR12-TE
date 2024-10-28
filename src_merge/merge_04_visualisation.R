@@ -1,9 +1,11 @@
 # This script gets gff file and the genome and return the set of candidate sequences for merging
 
-library(ggplot2)
-library(pannagram)
-
-library(optparse)
+suppressMessages({
+  library(ggplot2)
+  library(crayon)
+  library(pannagram)
+  library(optparse)
+})
 
 option_list = list(
   make_option("--path.out",      type="character", default="", help="Path to the output folder"),
@@ -30,7 +32,6 @@ if (is.null(opt$file.genome)) {
 if (is.null(opt$file.gff)) {
   stop("Error: --file.gff is required.")
 }
-
 
 path.out = opt$path.out
 file.genome = opt$file.genome
@@ -72,13 +73,13 @@ if (!dir.exists(path.gff.out)) {
 tbl.cnt = read.table(file.cnt, stringsAsFactors = F)
 tbl.cnt = tbl.cnt[tbl.cnt$total >= 4,]
 
-pokaz("Number#1:", dim(tbl.cnt))
+# pokaz("Number#1:", dim(tbl.cnt))
 
 # Genome
 genome = readFasta(file.genome)
 genome.list = lapply(genome, seq2nt)
-names(genome.list) = sapply(names(genome), function(s) strsplit(s, ' ')[[1]][1])
-
+genome.names = sapply(names(genome), function(s) strsplit(s, ' ')[[1]][1])
+names(genome.list) = genome.names
 
 # ---- Read gff ----
 
@@ -104,10 +105,6 @@ categories2removed = c('centromeric_repeat',
                        'target_site_duplication')
 
 gff = gff[!(gff$V3 %in% categories2removed),]
-table(gff$V3)
-
-pokaz('Chromosomes:', unique(gff$V1))
-
 
 gff$id = sapply(gff$V9, function(s){
   res = strsplit(s, ';')[[1]]
@@ -118,7 +115,6 @@ gff$id = sapply(gff$V9, function(s){
   return(res)
 }  )
 
-
 idx.contains <- grepl("Parent", gff$V9)
 gff = gff[!idx.contains,]
 
@@ -127,18 +123,13 @@ if(sum(idx.contains) != 0){
   stop('Something is wrong with rDNA')
 }
 
-
 # Remove very long hits
 gff$len = (gff$V5 - gff$V4 + 1)
 len.max = 50000
 # len.min = 100
-gff[gff$len > len.max,]
 
 gff = gff[gff$len <= len.max,]
 # gff = gff[gff$len >= len.min,]
-
-# Result
-pokaz('Number of hits:', nrow(gff))
 
 # Sorting
 rownames(gff) = NULL
@@ -168,8 +159,6 @@ m.df <- data.frame(
 # ---- Check that blast hits for merged fragments don't overlap ----
 
 file.merged.gff = paste0(path.res, 'simsearch.GCA_028009825_80_95.gff')
-
-pokaz('File with results:', file.merged.gff)
 
 gff.merge = read.table(file.merged.gff, stringsAsFactors = F)
 idx.suspicious = c()
@@ -205,8 +194,6 @@ for(i.m in 1:nrow(m.df)){
 
 m.df$n = unlist(lapply(idx.merge, length))
 
-table(m.df$n)
-
 df <- as.data.frame(table(m.df$n))
 df$Var1 = factor(df$Var1, levels = sort(unique(df$Var1)))
 
@@ -232,8 +219,7 @@ check.again.out = c()
 m.df$check = 0
 
 for(i.m in which(m.df$n > 1)){
-  pokaz(i.m)
-  # for(i.m in 1:nrow(m.df)){
+# for(i.m in 1:nrow(m.df)){
   gff.tmp = gff.merge[grepl(m.df$name[i.m], gff.merge$V9, fixed = TRUE),]
 
   idx.tmp = idx.merge[[i.m]]
@@ -306,10 +292,7 @@ for(i.m in which(m.df$n > 1)){
     next
   }
   
-  pokaz('Visualisation')
-  
   # ---- Visualisation ----
-  
   # Vertical annotation
   gradient_colors <- colors(length(idx.tmp))
   
@@ -348,6 +331,11 @@ for(i.m in which(m.df$n > 1)){
                          collapse = '\n')) + 
     theme(plot.title = element_text(size = 10)) 
   
+  p.nt = p.nt + ggtitle(paste0(c(paste(i.m, m.df$chr[i.m], m.df$beg[i.m], m.df$end[i.m] ),
+                           paste(gff$id[idx.tmp], gff$chr[idx.tmp],gff$V4[idx.tmp], gff$V5[idx.tmp], sep = ' ')),
+                         collapse = '\n')) + 
+    theme(plot.title = element_text(size = 10)) 
+  
   png(paste(path.figures.m, pref,  'aln_',i.m,'_msadiff.png', sep = ''), 
       width = 8, height = 6, units = "in", res = 300)
   print(p.nt)     # Plot 1 --> in the first page of PDF
@@ -359,7 +347,7 @@ for(i.m in which(m.df$n > 1)){
   dev.off()
   
   png(paste(path.figures.m, pref, 'aln_',i.m,'_dot.png', sep = ''), 
-      width = 8, height = 6, units = "in", res = 300)
+      width = 6, height = 6, units = "in", res = 300)
   print(p.dot)     # Plot 1 --> in the first page of PDF
   dev.off()
   
@@ -410,7 +398,6 @@ if(length(idx.remove) > 0){
 m.df = m.df[m.df$check != 3,]
 rownames(m.df) = NULL
 
-
 m.df$pref = ''
 m.df$type = ''
 m.df$dir = ''
@@ -439,13 +426,9 @@ for(i.m in 1:nrow(m.df)){
 }
 
 m.df$type[m.df$type == "Gypsy_LTR_retrotransposon|LTR_retrotransposon"] = "LTR_retrotransposon"
-pokaz(unique(m.df$dir))
 m.df$dir[!(m.df$dir %in% c('-', '+'))] = '.'
-pokaz('Unique types:', unique(m.df$type))
 
 saveRDS(m.df, paste0(path.gff.out, 'm_df.rds'))
-
-genome.names = names(genome.list)
 
 m.gff = data.frame(
                    # V1 = genome.names[m.df$chr],

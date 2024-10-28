@@ -1,5 +1,5 @@
 #!/bin/bash
-INSTALLED_PATH=$(Rscript -e "cat(system.file(package = 'pannagram'))")
+PATH_SRC="src_merge/"
 # ----------------------------------------------------------------------------
 #            ERROR HANDLING BLOCK
 # ----------------------------------------------------------------------------
@@ -47,6 +47,8 @@ Options:
     -n, --copy_number COPY_NUM   Minimum number of copies per genome. Default: 4.
     -r, --max_rounds MAX_ROUND   Maximum number of rounds of merging. Default: 20.
     -k, --keepblast              Keep the intermediate BLAST files
+    -v, --visualise              Create figures for final merges
+
 
 EOF
 }
@@ -63,7 +65,9 @@ patterns="LTR"
 copy_number=4
 max_rounds=20
 keepblast=""
+visualise="FALSE"
 
+PATH_PAN=""  # path to the pannagram folder
 
 while [ $# -gt 0 ]
 do
@@ -72,24 +76,25 @@ do
         -h | --help) print_usage; exit ;;
         
         # Required
-        -i | --file_gff)     file_gff=$2;      shift 2 ;;  
-		-g | --file_genome)  file_genome=$2;  shift 2 ;;  
-        -o | --path_out)     path_out=$2;     shift 2 ;;  
+        -i | --file_gff)     file_gff=$2;    shift 2 ;;  
+		-g | --file_genome)  file_genome=$2; shift 2 ;;  
+        -o | --path_out)     path_out=$2;    shift 2 ;;  
 		
 		# Optional
-		-s | --sim) 		 sim_sutoff=$2;    shift 2 ;;
+		-s | --sim) 		 sim_sutoff=$2;  shift 2 ;;
         -c | --covegare)     covegare=$2;    shift 2 ;;
-		-d | --distance) 	 distance=$2;      shift 2 ;;  
-        -p | --patterns)     patterns=$2;      shift 2 ;;
-		-n | --copy_number)  copy_number=$2;   shift 2 ;;
-        -r | --max_rounds)   max_rounds=$2;    shift 2 ;;
+		-d | --distance) 	 distance=$2;    shift 2 ;;  
+        -p | --patterns)     patterns=$2;    shift 2 ;;
+		-n | --copy_number)  copy_number=$2; shift 2 ;;
+        -r | --max_rounds)   max_rounds=$2;  shift 2 ;;
+        --pan )              PATH_PAN=$2;    shift 2 ;;
 
-        -k | --keepblast)   keepblast=' -keepblast ';    shift 1 ;;
+        -k | --keepblast)    keepblast=' -keepblast ';    shift 1 ;;
+        -v | --visualise)    visualise="TRUE";            shift 1 ;;
 
         *) unrecognized_options+=("$1"); shift 1 ;;
     esac
 done
-
 
 # Output of Unrecognized Parameters
 if [[ ${#unrecognized_options[@]} -gt 0 ]]; then
@@ -139,104 +144,160 @@ if [ "${path_out: -1}" != "/" ]; then
     path_out="$path_out/"
 fi
 
+
+# path_out_gff="${path_out}simsearch_${sim_sutoff}_${covegare}_${copy_number}_gff/"
+# mkdir -p "${path_out_gff}"
+file_gff_parent="${path_out}gff_merged_only.gff"
+if [ -f  ${file_gff_parent} ]; then
+    rm ${file_gff_parent}
+fi
+
 # ----------------------------------------------------------------------------
 #            MAIN
 # ----------------------------------------------------------------------------
 
 # ----------------------------------------
-# Read the gff file, and get sequences
+# Extract patterns to analyse
+IFS=',' read -ra elements <<< "$patterns"
 
-file_merged_seqs="${path_out}merged_seqs_1.fasta"
-
-Rscript $INSTALLED_PATH/merge/merge_01_extract_hits.R \
-        --file.gff=${file_gff} \
-        --file.genome=${file_genome} \
-        --file.seqs=${file_merged_seqs} \
-        --patterns=${patterns} \
-        --len.gap=${distance}
-
-# # ----------------------------------------
-# # Simrearch and Merge
-
-file_merged_seqs_fixed="${path_out}merged_seqs_fixed.txt"
-
-for ((i=1; i<=max_rounds; i++))
-do
-	file_merged_seqs="${path_out}merged_seqs_${i}.fasta"
-
-	if [ ! -f "${file_merged_seqs}" ]; then
-        break
-    fi
-    
-    path_simsearch="${path_out}simseqrch_seqs_${i}/"
-
-	# Run simsearch
-
-	$INSTALLED_PATH/simsearch.sh \
-    -in_seq ${file_merged_seqs}    \
-    -on_genome ${file_genome} \
-    -out "${path_out}simseqrch_seqs_${i}/" \
-    -sim ${sim_sutoff} \
-    -cov ${covegare} \
-    ${keepblast}
-    
-
-	# Get Collapsed sequences - neighbours only
-
-    file_merged_seqs_next="${path_out}merged_seqs_$((i+1)).fasta"
-
-    file_cnt=$(find ${path_simsearch} -type f -name "*${sim_sutoff}_${covegare}.cnt")
-
-    if [ -z "$file_cnt" ]; then
-        echo "Error: No file ending with ${sim_sutoff}_${covegare}.cnt found." >&2
-        exit 1
-    elif [ $(echo "$file_cnt" | wc -l) -ne 1 ]; then
-        echo "Error: More than one file matching the pattern *${sim_sutoff}_${covegare}.cnt found." >&2
-        exit 1
-    fi
-
-    Rscript $INSTALLED_PATH/merge/merge_02_new_hits.R \
-        --file.cnt ${file_cnt} \
-        --file.genome ${file_genome} \
-        --file.seqs ${file_merged_seqs_next} \
-        --file.fix ${file_merged_seqs_fixed} \
-        --copy.number=${copy_number}
-
+echo "* The following types will be analyzed:"
+for element in "${elements[@]}"; do
+    echo "  $element"
 done
 
-echo ${file_merged_seqs_fixed}
-if [ ! -s ${file_merged_seqs_fixed} ];  then
-    exit 0
-fi
+for element in "${elements[@]}"
+do
+    path_out_elem="${path_out}simsearch_${sim_sutoff}_${covegare}_${copy_number}_${element}/"
+    mkdir -p "${path_out_elem}"
 
+    # echo "Output folder: ${path_out_elem}"
 
-file_fix_seqs="${path_out}seqs_fix.fasta"
+    # ----------------------------------------
+    # Read the gff file, and get sequences
 
-Rscript $INSTALLED_PATH/merge/merge_03_get_hits.R \
-    --path.out ${path_out} \
-    --file.fix ${file_merged_seqs_fixed} \
-    --file.fix.seqs=${file_fix_seqs}
+    echo "* Stage: Extract candidates for merging for type ${element}."
 
+    file_merged_seqs="${path_out_elem}merged_seqs_1.fasta"
 
-if grep -q "^>" ${file_fix_seqs}; then
-    $INSTALLED_PATH/simsearch.sh \
-        -in_seq ${file_fix_seqs}    \
+    Rscript ${PATH_SRC}merge_01_extract_hits.R \
+            --file.gff=${file_gff} \
+            --file.genome=${file_genome} \
+            --file.seqs=${file_merged_seqs} \
+            --patterns=${element} \
+            --len.gap=${distance}
+
+    # ----------------------------------------
+    # Simrearch and Merge
+
+    echo "* Stage: Search for copies in the genome over several rounds."
+
+    file_merged_seqs_fixed="${path_out_elem}merged_seqs_fixed.txt"
+
+    for ((i=1; i<=max_rounds; i++)) ; do
+        echo "  == Round ${i} =="
+    	file_merged_seqs="${path_out_elem}merged_seqs_${i}.fasta"
+
+    	if [ ! -f "${file_merged_seqs}" ]; then
+            break
+        fi
+        
+        path_simsearch="${path_out_elem}simseqrch_seqs_${i}/"
+
+    	# Run simsearch
+
+    	${PATH_PAN}simsearch.sh \
+        -in_seq ${file_merged_seqs}    \
         -on_genome ${file_genome} \
-        -out "${path_out}simseqrch_seqs_fix/" \
+        -out "${path_out_elem}simseqrch_seqs_${i}/" \
         -sim ${sim_sutoff} \
         -cov ${covegare} \
         ${keepblast}
-else
-    echo "Nothing to merge"
+
+    	# Get Collapsed sequences - neighbours only
+
+        file_merged_seqs_next="${path_out_elem}merged_seqs_$((i+1)).fasta"
+
+        file_cnt=$(find ${path_simsearch} -type f -name "*${sim_sutoff}_${covegare}.cnt")
+
+        if [ -z "$file_cnt" ]; then
+            echo "Error: No file ending with ${sim_sutoff}_${covegare}.cnt found." >&2
+            exit 1
+        elif [ $(echo "$file_cnt" | wc -l) -ne 1 ]; then
+            echo "Error: More than one file matching the pattern *${sim_sutoff}_${covegare}.cnt found." >&2
+            exit 1
+        fi
+
+        echo "* Analyse counts.."
+
+        Rscript ${PATH_SRC}merge_02_new_hits.R \
+            --file.cnt ${file_cnt} \
+            --file.genome ${file_genome} \
+            --file.seqs ${file_merged_seqs_next} \
+            --file.fix ${file_merged_seqs_fixed} \
+            --copy.number=${copy_number}
+
+    done
+
+    # echo ${file_merged_seqs_fixed}
+    if [ ! -s ${file_merged_seqs_fixed} ];  then
+        continue
+    fi
+
+    # ----------------------------------------
+    # Get the merges and search for them one more time
+    echo  "* Stage: Combine merges."
+
+    file_fix_seqs="${path_out_elem}seqs_fix.fasta"
+
+    Rscript ${PATH_SRC}merge_03_get_hits.R \
+        --path.out ${path_out_elem} \
+        --file.fix ${file_merged_seqs_fixed} \
+        --file.fix.seqs=${file_fix_seqs}
+
+    if grep -q "^>" ${file_fix_seqs}; then
+        ${PATH_PAN}simsearch.sh \
+            -in_seq ${file_fix_seqs}    \
+            -on_genome ${file_genome} \
+            -out "${path_out_elem}simseqrch_seqs_fix/" \
+            -sim ${sim_sutoff} \
+            -cov ${covegare} \
+            ${keepblast}
+    else
+        echo "Nothing to merge"
+    fi
+
+    # ----------------------------------------
+    # Visualise and get information
+    echo  "* Stage: Get pre-gff file, only with parents."
+
+    Rscript ${PATH_SRC}merge_04_visualisation.R \
+            --path.out  ${path_out_elem} \
+            --file.genome ${file_genome} \
+            --file.gff=${file_gff} \
+            --plot ${visualise}
+
+    # ----------------------------------------
+    # Merge all outputs together
+
+    # echo ${file_gff_element}
+    file_gff_element="${path_out_elem}gff_out/gff_merged.gff"
+    if [ -f  ${file_gff_element} ]; then
+        cat ${file_gff_element} >> "${file_gff_parent}"
+    fi
+
+done
+
+# ----------------------------------------
+# Final GFF
+echo  "* Stage: Final gff-file."
+
+if [ -f  ${file_gff_parent} ]; then
+
+    Rscript ${PATH_SRC}merge_05_comb_gff.R  \
+            --path.out ${path_out} \
+            --file.gff ${file_gff} \
+            --file.gff.parent ${file_gff_parent}
 fi
-
-
-Rscript $INSTALLED_PATH/merge/merge_04_visualisation.R \
-        --path.out  ${path_out} \
-        --file.genome ${file_genome} \
-        --file.gff=${file_gff} \
-        --plot FALSE
-
 
 
 

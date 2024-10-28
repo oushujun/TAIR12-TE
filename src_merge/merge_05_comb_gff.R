@@ -1,9 +1,11 @@
 # This script gets gff file and the genome and return the set of candidate sequences for merging
 
-library(ggplot2)
-library(pannagram)
-
-library(optparse)
+suppressMessages({
+  library(ggplot2)
+  library(crayon)
+  library(pannagram)
+  library(optparse)
+})
 
 option_list = list(
   make_option("--path.out",        type="character", default="", help="Path to the output folder"),
@@ -36,8 +38,8 @@ file.gff = opt$file.gff
 file.gff.parent = opt$file.gff.parent
 
 
-pokaz('Initial GFF', basename(file.gff))
-pokaz('Parents GFF', basename(file.gff.parent))
+pokaz('Initial GFF:', basename(file.gff))
+pokaz('Parents GFF:', basename(file.gff.parent))
 
 gff = read.table(file.gff, stringsAsFactors = F)
 
@@ -46,7 +48,7 @@ gff.merge = gff.merge[order(gff.merge$V5),]
 gff.merge = gff.merge[order(gff.merge$V4),]
 gff.merge = gff.merge[order(gff.merge$V1),]
 
-pokaz(nrow(gff.merge))
+# pokaz(nrow(gff.merge))
 
 n.register = nchar(as.character(nrow(gff.merge)))
 
@@ -68,9 +70,6 @@ gff.out = rbind(gff[,1:9], gff.merge[,1:9])
 gff.out = gff.out[order(-gff.out$V5),]
 gff.out = gff.out[order(gff.out$V4),]
 gff.out = gff.out[order(gff.out$V1),]
-
-
-pokaz(basename(file.gff))
 
 write.table(gff.out, 
             file = paste0(path.out, sub('.gff', '_merges.gff', basename(file.gff))),

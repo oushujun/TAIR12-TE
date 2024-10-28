@@ -1,25 +1,18 @@
 # This script gets gff file and the genome and return the set of candidate sequences for merging
 
-library(optparse)
-
-source(system.file("utils/utils.R", package = "pannagram"))
-
-pokazStage('Extract candidates for merging..')
-
+suppressMessages({
+  library(crayon)
+  library(pannagram)
+  library(optparse)
+})
 
 option_list = list(
-  make_option(c("--file.gff"), type="character", default="", 
-              help="Path to the GFF file", metavar="character"),
-  make_option(c("--file.genome"), type="character", default="", 
-              help="Path to the genome file", metavar="character"),
-  make_option(c("--file.seqs"), type="character", default="", 
-              help="Path to the sequences file", metavar="character"),
-  make_option(c("--patterns"), type="character", default="", 
-              help="Pattern to search for", metavar="character"),
-  make_option(c("--len.max"), type="integer", default=50000, 
-              help="Maximum length for filtering", metavar="integer"),
-  make_option(c("--len.gap"), type="integer", default=1000, 
-              help="Gap length for filtering", metavar="integer")
+  make_option(c("--file.gff"),    type="character", default="",    help="Path to the GFF file"),
+  make_option(c("--file.genome"), type="character", default="",    help="Path to the genome file"),
+  make_option(c("--file.seqs"),   type="character", default="",    help="Path to the sequences file"),
+  make_option(c("--patterns"),    type="character", default="",    help="Pattern to search for"),
+  make_option(c("--len.max"),     type="integer",   default=50000, help="Maximum length for filtering"),
+  make_option(c("--len.gap"),     type="integer",   default=1000,  help="Gap length for filtering")
 );
 
 opt_parser = OptionParser(option_list=option_list);
@@ -55,7 +48,6 @@ if(nchar(patterns) != ''){
 } else {
   pokaz('No keywords to filter types')  
 }
-
 
 # ---- Read the data ----
 if(!file.exists(file.gff)) stop(paste('Gff file does not exist:', file.gff))
@@ -99,8 +91,8 @@ if(nchar(patterns) != ''){  # If pattern is setup
 
 if(sum(idx.remain) > 0){
   gff = gff[idx.remain,]
-  pokaz('Number of remained hits:', nrow(gff))
-  print(table(gff$V3))
+  # pokaz('Number of remained hits:', nrow(gff))
+  # print(table(gff$V3))
 } else {
   stop('Patterns were not found in types of gff hits (3D column in the gff file)')
 }
@@ -129,7 +121,7 @@ gff$chr = as.numeric(gsub('Chr', '', gff$V1))
 # ---- Read the genome ----
 
 if(!file.exists(file.genome)) stop('Genome file doesn’t exist')
-genome = readFastaMy(file.genome)
+genome = readFasta(file.genome)
 
 genome.list = list()
 for(i.chr in 1:length(genome)){
@@ -179,7 +171,7 @@ for(type in types){
     
     idx.merge = which(gff.chr$dist <= len.gap)
     idx.merge = setdiff(idx.merge, nrow(gff.chr))
-    pokaz('Number of merged hits:', length(idx.merge))
+    pokaz('Number of candidates for merging:', length(idx.merge))
     
     if(length(idx.merge) == 0) next
     
@@ -217,7 +209,7 @@ for(type in types){
 
 if(length(seqs.merge) > 0){
   pokaz('Total number of sequences:', length(seqs.merge))
-  writeFastaMy(seqs.merge, file.seqs)  
+  writeFasta(seqs.merge, file.seqs)  
 } else {
   pokaz('No sequences were found for merging')  
 }
