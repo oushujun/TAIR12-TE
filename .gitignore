@@ -3,5 +3,6 @@ data/genome/*
 data/gff/*
 !data/gff/README.md
 data/out_merge
+!data/out_merge/README.md
 *.DS_Store
-
+run_*.sh
