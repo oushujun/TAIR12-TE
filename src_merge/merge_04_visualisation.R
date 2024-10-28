@@ -398,6 +398,11 @@ if(length(idx.remove) > 0){
 m.df = m.df[m.df$check != 3,]
 rownames(m.df) = NULL
 
+idx.merge = list()
+for(i.m in 1:nrow(m.df)){
+  idx.merge[[i.m]] = which((gff$chr == m.df$chr[i.m]) & (gff$V4 >= m.df$beg[i.m]) & (gff$V5 <= m.df$end[i.m]))
+}
+
 m.df$pref = ''
 m.df$type = ''
 m.df$dir = ''
