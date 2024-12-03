@@ -41,7 +41,7 @@ Options:
     -o, --path_out PATH_OUT      Path to the directory where all results and intermediate files will be saved.
     
     -s, --sim  SIMILARITY        Similarity cutoff value used in the analysis. Default: 90.
-    -c, --covegare  COVERAGE     Similarity cutoff value used in the analysis. Default: equal to sim.
+    -c, --coverage  COVERAGE     Similarity cutoff value used in the analysis. Default: equal to sim.
     -d, --distance  DISTANCE     Distance between two hits. Default: 1000.
     -p, --patterns PATTERNS      Patterns of repeats to analyse. Default: LTR.
     -n, --copy_number COPY_NUM   Minimum number of copies per genome. Default: 4.
@@ -59,7 +59,8 @@ EOF
 
 unrecognized_options=()
 
-sim_sutoff=90
+sim_cutoff=90
+# coverage=85
 distance=1000
 patterns="LTR"
 copy_number=4
@@ -81,8 +82,8 @@ do
         -o | --path_out)     path_out=$2;    shift 2 ;;  
 		
 		# Optional
-		-s | --sim) 		 sim_sutoff=$2;  shift 2 ;;
-        -c | --covegare)     covegare=$2;    shift 2 ;;
+		-s | --sim) 		 sim_cutoff=$2;  shift 2 ;;
+        -c | --coverage)     coverage=$2;    shift 2 ;;
 		-d | --distance) 	 distance=$2;    shift 2 ;;  
         -p | --patterns)     patterns=$2;    shift 2 ;;
 		-n | --copy_number)  copy_number=$2; shift 2 ;;
@@ -109,8 +110,11 @@ fi
 
 # Check if coverage parameter is provided. If not - set qeual to sim
 if [ -z "$coverage" ]; then
-    coverage=${sim_threshold}
+    coverage=${sim_cutoff}
 fi
+
+echo "Coverage: ${coverage}"
+echo "Similarity: ${sim_cutoff}"
 
 # ----------------------------------------------------------------------------
 #            PARAMETERS: checking
@@ -145,7 +149,7 @@ if [ "${path_out: -1}" != "/" ]; then
 fi
 
 
-# path_out_gff="${path_out}simsearch_${sim_sutoff}_${covegare}_${copy_number}_gff/"
+# path_out_gff="${path_out}simsearch_${sim_cutoff}_${coverage}_${copy_number}_gff/"
 # mkdir -p "${path_out_gff}"
 file_gff_parent="${path_out}gff_merged_only.gff"
 if [ -f  ${file_gff_parent} ]; then
@@ -167,7 +171,7 @@ done
 
 for element in "${elements[@]}"
 do
-    path_out_elem="${path_out}simsearch_${sim_sutoff}_${covegare}_${copy_number}_${element}/"
+    path_out_elem="${path_out}simsearch_${sim_cutoff}_${coverage}_${copy_number}_${element}/"
     mkdir -p "${path_out_elem}"
 
     # echo "Output folder: ${path_out_elem}"
@@ -205,25 +209,25 @@ do
 
     	# Run simsearch
 
-    	${PATH_PAN}simsearch.sh \
+    	simsearch \
         -in_seq ${file_merged_seqs}    \
         -on_genome ${file_genome} \
         -out "${path_out_elem}simseqrch_seqs_${i}/" \
-        -sim ${sim_sutoff} \
-        -cov ${covegare} \
+        -sim ${sim_cutoff} \
+        -cov ${coverage} \
         ${keepblast}
 
     	# Get Collapsed sequences - neighbours only
 
         file_merged_seqs_next="${path_out_elem}merged_seqs_$((i+1)).fasta"
 
-        file_cnt=$(find ${path_simsearch} -type f -name "*${sim_sutoff}_${covegare}.cnt")
+        file_cnt=$(find ${path_simsearch} -type f -name "*${sim_cutoff}_${coverage}.cnt")
 
         if [ -z "$file_cnt" ]; then
-            echo "Error: No file ending with ${sim_sutoff}_${covegare}.cnt found." >&2
+            echo "Error: No file ending with ${sim_cutoff}_${coverage}.cnt found." >&2
             exit 1
         elif [ $(echo "$file_cnt" | wc -l) -ne 1 ]; then
-            echo "Error: More than one file matching the pattern *${sim_sutoff}_${covegare}.cnt found." >&2
+            echo "Error: More than one file matching the pattern *${sim_cutoff}_${coverage}.cnt found." >&2
             exit 1
         fi
 
@@ -255,12 +259,12 @@ do
         --file.fix.seqs=${file_fix_seqs}
 
     if grep -q "^>" ${file_fix_seqs}; then
-        ${PATH_PAN}simsearch.sh \
+        simsearch \
             -in_seq ${file_fix_seqs}    \
             -on_genome ${file_genome} \
             -out "${path_out_elem}simseqrch_seqs_fix/" \
-            -sim ${sim_sutoff} \
-            -cov ${covegare} \
+            -sim ${sim_cutoff} \
+            -cov ${coverage} \
             ${keepblast}
     else
         echo "Nothing to merge"

@@ -55,7 +55,8 @@ if (!dir.exists(path.figures.m)) {
 
 path.res = paste0(path.out, 'simseqrch_seqs_fix/')
 
-file.cnt = paste0(path.res, 'simsearch.GCA_028009825_80_95.cnt')
+# file.cnt = paste0(path.res, 'simsearch.',ref.name,'_',n.sim,'_',n.cov,'.cnt')
+file.cnt <- list.files(path = path.res, pattern = "cnt$", full.names = TRUE)
 
 # path for Mafft
 path.work = paste0(path.out, 'tmp/')
@@ -158,7 +159,8 @@ m.df <- data.frame(
 
 # ---- Check that blast hits for merged fragments don't overlap ----
 
-file.merged.gff = paste0(path.res, 'simsearch.GCA_028009825_80_95.gff')
+# file.merged.gff = paste0(path.res, 'simsearch.GCA_028009825_80_95.gff')
+file.merged.gff <- list.files(path = path.res, pattern = "gff$", full.names = TRUE)
 
 gff.merge = read.table(file.merged.gff, stringsAsFactors = F)
 idx.suspicious = c()
@@ -338,17 +340,17 @@ for(i.m in which(m.df$n > 1)){
   
   png(paste(path.figures.m, pref,  'aln_',i.m,'_msadiff.png', sep = ''), 
       width = 8, height = 6, units = "in", res = 300)
-  print(p.nt)     # Plot 1 --> in the first page of PDF
+  print(p)    
   dev.off()
   
   png(paste(path.figures.m, pref, 'aln_',i.m,'_msaplot.png', sep = ''), 
       width = 8, height = 6, units = "in", res = 300)
-  print(p)     # Plot 1 --> in the first page of PDF
+  print(p.nt)    
   dev.off()
   
   png(paste(path.figures.m, pref, 'aln_',i.m,'_dot.png', sep = ''), 
       width = 6, height = 6, units = "in", res = 300)
-  print(p.dot)     # Plot 1 --> in the first page of PDF
+  print(p.dot)   
   dev.off()
   
 }

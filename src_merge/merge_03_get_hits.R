@@ -77,11 +77,12 @@ if(nrow(x) == 0){
 
 # Read all of the sequence files and take those sequences, which match in  names
 
-file.seqs <- list.files(path = path.out, pattern = "^merged_seqs", full.names = TRUE)
+file.seqs <- list.files(path = path.out, pattern = "^merged_seqs.*fasta$", full.names = TRUE)
 
 seqs.all = c()
 
 for(f in file.seqs){
+  pokaz("Reading", f)
   seqs.all = c(seqs.all,
                readFasta(f))
 }
