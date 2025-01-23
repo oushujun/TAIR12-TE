@@ -183,12 +183,12 @@ do
 
     file_merged_seqs="${path_out_elem}merged_seqs_1.fasta"
 
-    Rscript ${PATH_SRC}merge_01_extract_hits.R \
-            --file.gff=${file_gff} \
-            --file.genome=${file_genome} \
-            --file.seqs=${file_merged_seqs} \
-            --patterns=${element} \
-            --len.gap=${distance}
+    # Rscript ${PATH_SRC}merge_01_extract_hits.R \
+    #         --file.gff=${file_gff} \
+    #         --file.genome=${file_genome} \
+    #         --file.seqs=${file_merged_seqs} \
+    #         --patterns=${element} \
+    #         --len.gap=${distance}
 
     # ----------------------------------------
     # Simrearch and Merge
@@ -209,13 +209,13 @@ do
 
     	# Run simsearch
 
-    	simsearch \
-        -in_seq ${file_merged_seqs}    \
-        -on_genome ${file_genome} \
-        -out "${path_out_elem}simseqrch_seqs_${i}/" \
-        -sim ${sim_cutoff} \
-        -cov ${coverage} \
-        ${keepblast}
+    	# simsearch \
+        # -in_seq ${file_merged_seqs}    \
+        # -on_genome ${file_genome} \
+        # -out "${path_out_elem}simseqrch_seqs_${i}/" \
+        # -sim ${sim_cutoff} \
+        # -cov ${coverage} \
+        # ${keepblast}
 
     	# Get Collapsed sequences - neighbours only
 
@@ -233,12 +233,12 @@ do
 
         echo "* Analyse counts.."
 
-        Rscript ${PATH_SRC}merge_02_new_hits.R \
-            --file.cnt ${file_cnt} \
-            --file.genome ${file_genome} \
-            --file.seqs ${file_merged_seqs_next} \
-            --file.fix ${file_merged_seqs_fixed} \
-            --copy.number=${copy_number}
+        # Rscript ${PATH_SRC}merge_02_new_hits.R \
+        #     --file.cnt ${file_cnt} \
+        #     --file.genome ${file_genome} \
+        #     --file.seqs ${file_merged_seqs_next} \
+        #     --file.fix ${file_merged_seqs_fixed} \
+        #     --copy.number=${copy_number}
 
     done
 
@@ -253,19 +253,20 @@ do
 
     file_fix_seqs="${path_out_elem}seqs_fix.fasta"
 
-    Rscript ${PATH_SRC}merge_03_get_hits.R \
-        --path.out ${path_out_elem} \
-        --file.fix ${file_merged_seqs_fixed} \
-        --file.fix.seqs=${file_fix_seqs}
+    # Rscript ${PATH_SRC}merge_03_get_hits.R \
+    #     --path.out ${path_out_elem} \
+    #     --file.fix ${file_merged_seqs_fixed} \
+    #     --file.fix.seqs=${file_fix_seqs}
 
     if grep -q "^>" ${file_fix_seqs}; then
-        simsearch \
-            -in_seq ${file_fix_seqs}    \
-            -on_genome ${file_genome} \
-            -out "${path_out_elem}simseqrch_seqs_fix/" \
-            -sim ${sim_cutoff} \
-            -cov ${coverage} \
-            ${keepblast}
+        echo "placeholder"
+        # simsearch \
+        #     -in_seq ${file_fix_seqs}    \
+        #     -on_genome ${file_genome} \
+        #     -out "${path_out_elem}simseqrch_seqs_fix/" \
+        #     -sim ${sim_cutoff} \
+        #     -cov ${coverage} \
+        #     ${keepblast}
     else
         echo "Nothing to merge"
     fi

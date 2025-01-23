@@ -165,6 +165,9 @@ file.merged.gff <- list.files(path = path.res, pattern = "gff$", full.names = TR
 gff.merge = read.table(file.merged.gff, stringsAsFactors = F)
 idx.suspicious = c()
 
+save(list = ls(), file = paste0("tmp_workspace_gff.RData"))
+stop()
+
 for(i.m in 1:nrow(m.df)){
   gff.tmp = gff.merge[grepl(m.df$name[i.m], gff.merge$V9, fixed = TRUE),]
   for(s.chr in unique(gff.tmp$V1)){
