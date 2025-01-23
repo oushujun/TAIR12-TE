@@ -165,8 +165,9 @@ file.merged.gff <- list.files(path = path.res, pattern = "gff$", full.names = TR
 gff.merge = read.table(file.merged.gff, stringsAsFactors = F)
 idx.suspicious = c()
 
-save(list = ls(), file = paste0("tmp_workspace_gff.RData"))
-stop()
+# Lines for testing
+# save(list = ls(), file = paste0("tmp_workspace_gff.RData"))
+# stop()
 
 for(i.m in 1:nrow(m.df)){
   gff.tmp = gff.merge[grepl(m.df$name[i.m], gff.merge$V9, fixed = TRUE),]
@@ -199,6 +200,39 @@ for(i.m in 1:nrow(m.df)){
 
 m.df$n = unlist(lapply(idx.merge, length))
 
+# ---- Remove overlaps ----
+n.m.df = nrow(m.df) + 1
+while(n.m.df != nrow(m.df)){
+  n.m.df = nrow(m.df)  
+  m.df.new = c()
+  for(i.chr in sort(unique(m.df$chr))){
+    m.df.chr = m.df[m.df$chr == i.chr,,drop=F]
+    m.df.chr = m.df.chr[order(m.df.chr$end),]
+    m.df.chr = m.df.chr[order(m.df.chr$beg),]
+    
+    idx.overlap = which(m.df.chr$end[-nrow(m.df.chr)] > m.df.chr$beg[-1])
+    if(length(idx.overlap) > 0){
+      pokaz('Chromosome', i.chr)
+      print(idx.overlap)
+      idx.remove = c()
+      for(idx.o in idx.overlap){
+        idx.candidates = c(idx.o, idx.o + 1)
+        idx.remove = c(idx.remove,
+                       idx.candidates[which(m.df.chr$n[idx.candidates] == min(m.df.chr$n[idx.candidates]))])
+        pokaz('N', m.df.chr$n[idx.candidates])
+      }
+      print(idx.remove)
+      idx.remove = unique(idx.remove)
+      m.df.new = rbind(m.df.new, m.df.chr[-idx.remove,])
+    } else {
+      m.df.new = rbind(m.df.new, m.df.chr)
+    }
+  }
+  m.df = m.df.new
+}
+
+# ---- Plot number of merged ----
+
 df <- as.data.frame(table(m.df$n))
 df$Var1 = factor(df$Var1, levels = sort(unique(df$Var1)))
 
@@ -223,8 +257,11 @@ colors <- colorRampPalette(c('#117554','#6EC207', "#FFEB00", "#4379F2"))
 check.again.out = c()
 m.df$check = 0
 
-for(i.m in which(m.df$n > 1)){
-# for(i.m in 1:nrow(m.df)){
+# for(i.m in which(m.df$n > 1)){
+for(i.m in 1:nrow(m.df)){
+  
+  s.pref = paste('merge', m.df$chr[i.m], m.df$beg[i.m], m.df$end[i.m],sep = '|')
+  
   gff.tmp = gff.merge[grepl(m.df$name[i.m], gff.merge$V9, fixed = TRUE),]
 
   idx.tmp = idx.merge[[i.m]]
@@ -247,10 +284,10 @@ for(i.m in which(m.df$n > 1)){
   }
   names(seqs) = seqs.names
   
-  file.clean = paste0(path.work, 'seqs_clean_', i.m, '.fasta')
+  file.clean = paste0(path.work, 'seqs_clean_', s.pref, '.fasta')
   writeFasta(seqs, file.clean)
   
-  aln.fasta = paste0(path.work, 'aln_', i.m, '.fasta')
+  aln.fasta = paste0(path.work, 'aln_', s.pref, '.fasta')
   
   if(!file.exists(aln.fasta)){
     system(paste('mafft  --quiet --op 3  --ep 0.1 --treeout ', file.clean, '>', aln.fasta,  sep = ' '))
@@ -341,17 +378,17 @@ for(i.m in which(m.df$n > 1)){
                          collapse = '\n')) + 
     theme(plot.title = element_text(size = 10)) 
   
-  png(paste(path.figures.m, pref,  'aln_',i.m,'_msadiff.png', sep = ''), 
+  png(paste(path.figures.m, pref,  'aln_',s.pref,'_msadiff.png', sep = ''), 
       width = 8, height = 6, units = "in", res = 300)
   print(p)    
   dev.off()
   
-  png(paste(path.figures.m, pref, 'aln_',i.m,'_msaplot.png', sep = ''), 
+  png(paste(path.figures.m, pref, 'aln_',s.pref,'_msaplot.png', sep = ''), 
       width = 8, height = 6, units = "in", res = 300)
   print(p.nt)    
   dev.off()
   
-  png(paste(path.figures.m, pref, 'aln_',i.m,'_dot.png', sep = ''), 
+  png(paste(path.figures.m, pref, 'aln_',s.pref,'_dot.png', sep = ''), 
       width = 6, height = 6, units = "in", res = 300)
   print(p.dot)   
   dev.off()

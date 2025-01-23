@@ -88,7 +88,6 @@ do
         -p | --patterns)     patterns=$2;    shift 2 ;;
 		-n | --copy_number)  copy_number=$2; shift 2 ;;
         -r | --max_rounds)   max_rounds=$2;  shift 2 ;;
-        --pan )              PATH_PAN=$2;    shift 2 ;;
 
         -k | --keepblast)    keepblast=' -keepblast ';    shift 1 ;;
         -v | --visualise)    visualise="TRUE";            shift 1 ;;
