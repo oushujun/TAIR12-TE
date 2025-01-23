@@ -260,6 +260,8 @@ m.df$check = 0
 # for(i.m in which(m.df$n > 1)){
 for(i.m in 1:nrow(m.df)){
   
+  save(list = ls(), file = paste0("tmp_workspace_",i.m,".RData"))
+  
   s.pref = paste('merge', m.df$chr[i.m], m.df$beg[i.m], m.df$end[i.m],sep = '_')
   
   gff.tmp = gff.merge[grepl(m.df$name[i.m], gff.merge$V9, fixed = TRUE),]
