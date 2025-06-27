@@ -2,9 +2,9 @@
 A repository to host scripts for annotating TEs in the Arabidopsis TAIR12 (Col-CC) genome
 
 - Shujun Ou
-- Alex
+- Alexandros Bousios
 - Zhigui Bao
-- Anna 
+- Anna Igolkina 
 
 ## Workflow
 
