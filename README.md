@@ -1,7 +1,39 @@
 # TAIR12-TE
 A repository to host scripts for annotating TEs in the Arabidopsis TAIR12 (Col-CC) genome
 
-## Merge hits
+- Shujun Ou
+- Alex
+- Zhigui Bao
+- Anna 
+
+## Workflow
+
+Here is the workflow what we used to annotate TAIR12
+
+<img width="800" alt="TAIR12 TE annotation workflow" src="images/TAIR12_TE_Figures_workflow.png">
+
+
+### Curation 1
+Specific family curation from @Alex
+
+### Curation 2
+Lineage classification by `TEsorter` and `Impactor2`
+
+### Curation 3
+- Remove intact TEs overlapping with functional annotation
+- Curate all novel TE families with TEtrimmer
+
+### Curation 4
+- Remove overlaps with tandem repeat annotatipn
+
+### Finalization
+Rerun `EDTA2` with  
+
+
+#### soloLTR 
+
+
+#### Merge hits
 
 After obtaining initial annotations using **EDTA**, a post-processing step was conducted to merge annotated fragments.
 The pipeline considers all neighboring fragments of the same family within a specific proximity. 
@@ -56,6 +88,10 @@ PATH_OUTPUT="data/out_merge/"
     -v 
 
 ```
+
+#### Liftoff with TAIR10
+
+#### Remove false genes
 
 
 
