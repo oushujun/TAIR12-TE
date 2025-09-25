@@ -10,7 +10,7 @@ A repository to host scripts for annotating TEs in the Arabidopsis TAIR12 (Col-C
 
 Here is the workflow what we used to annotate TAIR12
 
-<img width="800" alt="TAIR12 TE annotation workflow" src="images/TAIR12_TE_Figures_workflow.png">
+<img width="800" alt="TAIR12 TE annotation workflow" src="TAIR12_TE_Figures_workflow.png">
 
 
 ### Curation 1
